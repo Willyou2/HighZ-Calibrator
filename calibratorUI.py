@@ -73,25 +73,21 @@ def Calibrate(resOn, resOff, noiseOn, noiseOff, noneOn, noneOff, folder): #noneO
 		polFolders = sort(os.listdir(pol0direc))
 
 		#Finds closest folder to time for res50
-		closest = resCalTime - polFolders[0] #should always be positive, since we constructed the time from the current folder, and 0 is the earliest
-		index = 0
 		for i in range(len(polFolders)):
 			if resCalTime - polFolders[i] < 0:
 				break
-			index = i
-			closest = resCalTime - polFolders[i]
+			resIndex = i
+			resClosest = resCalTime - polFolders[i]
 
-		resTimes = numpy.fromfile(pol0direc + '/' + polFolders[index] + '/' + 'time_start.raw') #gets list of start times for each row for res50
+		resTimes = numpy.fromfile(pol0direc + '/' + polFolders[resIndex] + '/' + 'time_start.raw') #gets list of start times for each row for res50
 
-		closest = noiseCalTime - polFolders[0]
-		index = 0
 		for i in range(len(polFolders)):
 			if noiseCalTime - polFolders[i] < 0:
 				break
-			index = i
-			closest = resCalTime - polFolders[i]
+			noiseIndex = i
+			noiseClosest = resCalTime - polFolders[i]
 
-		noiseTimes = numpy.fromfile(pol0direc + '/' + polFolders[index] + '/' + 'time_start.raw') #gets list of start times for each row for noise
+		noiseTimes = numpy.fromfile(pol0direc + '/' + polFolders[noiseIndex] + '/' + 'time_start.raw') #gets list of start times for each row for noise
 
 		#Gets row that started closest to midtime of the res50
 		for i in range(len(resTimes)):
@@ -111,10 +107,34 @@ def Calibrate(resOn, resOff, noiseOn, noiseOff, noneOn, noneOff, folder): #noneO
 
 		#Now that we have the row for the noise source, we can find the measured noise source power. This should be done for each frequency, since it differs
 
+		#Opens pol0 file with times corresponding to res50 midTime
+		resPol = getGain.getOffs(sc.scioRead(pol0direc + '/' + polFolders[resIndex] + '/' + 'pol0.scio'))
+
+		#Opens pol0 file with times corresponding to noise source midTime
+		noisePol = getGain.getOffs(sc.scioRead(pol0direc + '/' + polFolders[noiseIndex] + '/' + 'pol0.scio'))
+
+		#Used resPol[0] since it's same in each pol0 file: 4096
+		bandwidth = 250/len(resPol[0])
+
+		############################################################################
+		#Creates a list of measured powers in nanoVolts^2 per Hz for each frequency#
+		############################################################################
+
+		#Res50
+		resList = []
+
+		for i in range(len(resPol[resRow])):
+			resList += [getGain.nVHz(getGain.dBm(resPol[resRow][i]), bandwidth)]
+
+		#Noise
+		noiseList = []
+
+		for i in range(len(noisePol[noiseRow])):
+			noiseList += [getGain.nVHz(getGain.dBm(noisePol[noiseRow][i]), bandwidth)]
 
 
+		#NEXT STEP: GET GAIN FROM THEORY AND MEASURED AND CREATE LIST FOR GAIN FOR EACH FREQ
 
-		
 	else:
 		print("Invalid data_70MHz folder!")
 	#Gets the time values
