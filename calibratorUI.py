@@ -6,23 +6,36 @@ import getGain
 import openScio as sc
 import os
 import numpy
+import bz2Decompress as bd
 
 #ASK DR PETERSON HOW HE WANTS THE PROGRAM TO WORK, SINCE THE NUMBER OF FOLDERS DIFFERS!
 
 #This is the folder directory (The root folder (main folder))
 direc = 'D:/Documents/Green Bank Stuff'
 
-def calUI(): 
+def init():
+	#Decompresses all the pol0.scio.bz2 files for use
+	newPath = direc + '/' + 'data_70MHz'
+	for folder in os.listdir(newPath):
+		if os.path.isdir(newPath + '/' + folder) and folder.isdigit():
+			for subfolder in os.listdir(newPath + '/' + folder):
+				if os.path.isdir(newPath + '/' + folder + '/' + subfolder):
+					print("Decompressing " + newPath + '/' + folder + '/' + subfolder + '/' + 'pol0.scio.bz2 ........', end='')
+					if bd.decomp(newPath + '/' + folder + '/' + subfolder + '/' + 'pol0.scio.bz2') != None:
+						print('Complete!')
+					#print('Failed: Either already decompressed or nonexistent')
 
+def calUI(): 
+	init()
 	#Navigates to the switch_data
-	if os.isdir(direc):
+	if os.path.isdir(direc):
 		#If there are multiple time folders (unlikely since 15294 will not change for a long time since you'd have to basically pass 100000 seconds)
 		timeFolders = []
 		timedirec = direc + '/' + 'switch_data'
 		for folder in os.listdir(timedirec): #navigates to switch data folder
 			if folder.isdigit():
 				timeFolders += [folder]
-		timeFolders = timeFolders.sort()
+		timeFolders.sort()
 
 		#Iterates over every time folder and does a calibration based on the files within each
 
@@ -40,7 +53,7 @@ def calUI():
 				res50 = getGain.getOffs(sc.scioRead(res50path))
 				noise = getGain.getOffs(sc.scioRead(noisepath))
 
-				while(len(res50))
+				#while(len(res50)) For looping through the entire pairs of on and off
 				if res50[0][0] == 1:
 					resOn, resOff = res50[0][1], res50[1][1]
 				else:
@@ -69,43 +82,45 @@ def Calibrate(resOn, resOff, noiseOn, noiseOff, noneOn, noneOff, folder): #noneO
 	
 	#Gets pol0 folders
 	pol0direc = direc + "/" + 'data_70MHz' + '/' + folder
-	if os.isdir(pol0direc):
-		polFolders = sort(os.listdir(pol0direc))
+	if os.path.isdir(pol0direc):
+		polFolders = sorted(os.listdir(pol0direc))
 
 		#Finds closest folder to time for res50
 		for i in range(len(polFolders)):
-			if resCalTime - polFolders[i] < 0:
+			if resCalTime - int(polFolders[i]) < 0:
 				break
 			resIndex = i
-			resClosest = resCalTime - polFolders[i]
+			resClosest = resCalTime - int(polFolders[i])
 
 		resTimes = numpy.fromfile(pol0direc + '/' + polFolders[resIndex] + '/' + 'time_start.raw') #gets list of start times for each row for res50
 
 		for i in range(len(polFolders)):
-			if noiseCalTime - polFolders[i] < 0:
+			if noiseCalTime - int(polFolders[i]) < 0:
 				break
 			noiseIndex = i
-			noiseClosest = resCalTime - polFolders[i]
+			noiseClosest = resCalTime - int(polFolders[i])
 
 		noiseTimes = numpy.fromfile(pol0direc + '/' + polFolders[noiseIndex] + '/' + 'time_start.raw') #gets list of start times for each row for noise
 
 		#Gets row that started closest to midtime of the res50
 		for i in range(len(resTimes)):
-			if resCalTime - resTimes[i] < 0:
+			if resCalTime - int(resTimes[i]) < 0:
 				break
-		resTime = resTimes[i-1]
+		resTime = int(resTimes[i-1])
 		resRow = i-1
 
 		#Now that we have the row of the res50, we can find the measured res50 power. Remember this is constant throughout frequencies, unlike the noise source
 
 		#Gets row that started closest to midtime of the noise source
 		for i in range(len(noiseTimes)):
-			if noiseCalTime - noiseTimes[i] < 0:
+			if noiseCalTime - int(noiseTimes[i]) < 0:
 				break
-		noiseTime = resTimes[i-1]
+		noiseTime = int(resTimes[i-1])
 		noiseRow = i-1
 
 		#Now that we have the row for the noise source, we can find the measured noise source power. This should be done for each frequency, since it differs
+
+		#INCLUDE A BZ2 OPENER
 
 		#Opens pol0 file with times corresponding to res50 midTime
 		resPol = getGain.getOffs(sc.scioRead(pol0direc + '/' + polFolders[resIndex] + '/' + 'pol0.scio'))
@@ -143,4 +158,4 @@ def Calibrate(resOn, resOff, noiseOn, noiseOff, noneOn, noneOff, folder): #noneO
 	#res50 = getGain.getOffs(sc.scioRead(res50))
 	#noise = getGain.getOffs(sc.scioRead(noise))
 
-
+calUI()

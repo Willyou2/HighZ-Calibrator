@@ -2,6 +2,7 @@ import openScio as sc
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import math
 
 #Thanks to Olga for the getPolynomial code
 
@@ -40,4 +41,4 @@ def nVHz(x, bandwidth): #This takes a dBm value and its bandwidth and converts i
     return nV2
 
 def dBm(x): #This takes a computer unit value and converts it to dBm
-    return 10*log10(x) - 147
+    return 10*math.log10(x) - 147
