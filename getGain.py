@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import math
 
+
+#With the gain, since gain is measured via: gain = 10*log10(P_out/P_in), we are only plotting power_out/power_in, so this is a ratio instead of formal gain
+#This means that by algebra, u do power measured / gain to get the actual calibrated power
 #Thanks to Olga for the getPolynomial code
 
 def getOffs(x): #This converts the arrays to readable lists. This applies to the lists in our program, which are 2 dimensional. If 1 dimensional, remove the for loop
@@ -21,13 +24,13 @@ def getPolynomial(): #This is more of a function to do an initialization job, si
     x = noise[50:,0].astype(float)
     y = noise[50:,1].astype(float)
 
-    V2_noise = 50 * 10**(y/10-9)
+    #V2_noise = 50 * 10**(y/10-9)
 
-    logx = np.log10(x)
+    #logx = np.log10(x)
     #y = np.log10(y)
-    logV2_noise = np.log10(V2_noise)
+    #logV2_noise = np.log10(V2_noise)
 
-    coefficients = np.polyfit(logx, logV2_noise, 4)
+    coefficients = np.polyfit(x, y, 4)
     polynomial = np.poly1d(coefficients)
 
     #ASK OLGA ABOUT THE POLYNOMIAL BECAUSE I DONT THINK IT CONVERTS Hz TO DBM BUT MAYBE LOG10(HZ)?
@@ -42,3 +45,5 @@ def nVHz(x, bandwidth): #This takes a dBm value and its bandwidth and converts i
 
 def dBm(x): #This takes a computer unit value and converts it to dBm
     return 10*math.log10(x) - 147
+
+print(nVHz(-174, 50))
