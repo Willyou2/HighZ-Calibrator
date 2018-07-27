@@ -46,4 +46,17 @@ def nVHz(x, bandwidth): #This takes a dBm value and its bandwidth and converts i
 def dBm(x): #This takes a computer unit value and converts it to dBm
     return 10*math.log10(x) - 147
 
-print(nVHz(-174, 50))
+def numpydBm(x): #Same but for numpy arrays (I'm not sure if numpy float 64s work the same way as python default values do, so I avoid generally using np.log10)
+    return 10*np.log10(x) - 147
+
+def calcGain(x1, x2, y1, y2): #In this case, x1 is the measured res50, y1, is the theoretical res50, x2 is the measured noise source, y2 is the theoretical noise source 
+    gain = []
+    #Gathers gain per frequency
+    for i in range(len(x1)):
+        Dx = x2[i]-x1[i]
+        Dy = y2[i]-y1[i]
+        #print(Dx)
+        gain += [Dy/Dx]
+    return gain
+
+print(nVHz(-174, 1000)) #0.00398107 is in Watts

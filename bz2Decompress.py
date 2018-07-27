@@ -3,6 +3,8 @@ import sys
 import bz2
 from bz2 import decompress
 
+#Decompresses the bz2 file, given by the path. I made sure to remove the .decompressed extension given (it's just a tag)
+
 def decomp(path):
 	filename = path.split('/')[-1]
 	folder = '/'.join(path.split('/')[:-1])

@@ -9,6 +9,7 @@ import openScio as sc
 import os
 import numpy
 import bz2Decompress as bd
+import matplotlib.pyplot as plt
 
 #ASK DR PETERSON HOW HE WANTS THE PROGRAM TO WORK, SINCE THE NUMBER OF FOLDERS DIFFERS!
 
@@ -36,13 +37,15 @@ def calUI():
 		for folder in os.listdir(timedirec): #navigates to switch data folder
 			if folder.isdigit():
 				timeFolders += [folder]
-		print(timeFolders)
+		#print(timeFolders)
 		timeFolders.sort()
 
 		#Iterates over every time folder and does a calibration based on the files within each
 
 		resCarryOn, noiseCarryOn, noneCarryOn = [],[],[] #If any of the ends of the time list continues onto the next folder, this will be used
 
+		#Initializes text file for creating huge data set
+		finishedData = []
 
 		for folder in timeFolders: #Goes through each large time folder (first 5 digits: aka 15294)
 			for subfolder in os.listdir(timedirec + '/' + folder): #Goes through each time folder inside
@@ -83,7 +86,21 @@ def calUI():
 					#print("res50 length: ", len(res50), ' noise length: ', len(noise))
 					res50 = res50[2:]
 					noise = noise[2:]
-					Calibrate(resOn, resOff, noiseOn, noiseOff, noneOn, noneOff, folder)
+					finishedData += Calibrate(resOn, resOff, noiseOn, noiseOff, noneOn, noneOff, folder)
+
+		#Writes the finished data to a text file called Experimental Data
+		expData = open(direc + '/' + 'exData.txt', 'w')
+		for i in range(len(finishedData)):
+			for j in range(len(finishedData[i])):
+				if j == len(finishedData[i]) - 1:
+					expData.write(str(finishedData[i][j]))
+				else:
+					expData.write(str(finishedData[i][j]) + ',') #TypeError: ufunc 'add' did not contain a loop with signature matching types dtype('<U32') dtype('<U32') dtype('<U32') - > possibly due to too large a value?
+			if i == len(finishedData)-1:
+				break
+			else:
+				expData.write('\n')
+
 
 	else:
 		print("This is an incorrect path")
@@ -142,7 +159,7 @@ def Calibrate(resOn, resOff, noiseOn, noiseOff, noneOn, noneOff, folder): #noneO
 
 		#Used resPol[0] since it's same in each pol0 file: 4096. 250 is megahertz
 		bandwidth = 250*(10**6)/len(resPol[0]) 
-		print(bandwidth)
+		#print(bandwidth)
 
 		############################################################################
 		#Creates a list of measured powers in nanoVolts^2 per Hz for each frequency#
@@ -150,22 +167,38 @@ def Calibrate(resOn, resOff, noiseOn, noiseOff, noneOn, noneOff, folder): #noneO
 
 		#Res50
 		resList = []
-
+		#for i in range(len(resPol[resRow])):
+		#	resList += [resPol[resRow][i]* 6.31 * 10**(-22)]
 		for i in range(len(resPol[resRow])):
 			resList += [getGain.nVHz(getGain.dBm(resPol[resRow][i]), bandwidth)]
 		#The res list isn't actually relatively constant because of the general down-sloping line in the data
-
+		#print(resList[40])
 		#Noise
 		noiseList = []
+		#for i in range(len(noisePol[noiseRow])):
+		#	noiseList += [noisePol[noiseRow][i]* 6.31 * 10**(-22)]
 		for i in range(len(noisePol[noiseRow])):
 			noiseList += [getGain.nVHz(getGain.dBm(noisePol[noiseRow][i]), bandwidth)]
-
+		#print(noisePol)
 		polynomial = getGain.getPolynomial() #Gets dbm as a function of frequency
 		#NEED TO FIND GAIN NOW
 
 		#res50 noise constant
-		resTheory = 3.98*(10**(-21))#In watts/Hz
+		resTheory = getGain.nVHz(-174, 1000) #Converts -174 dbm to nV^2/Hz -> Res50 has a bandwidth of 1000 Hz and the noise source is 10000Hz
+		#Odd: The value
+		#print(resTheory)
+		resTheory = [resTheory]*len(resPol[0]) #This is to create a list of the same value and length so it can be easily iterated on
 
+		freqRange = numpy.arange(0, 250*10**6, bandwidth) #Creates frequency range to iterate over
+
+		#print(len(freqRange))
+		noiseTheory = list(getGain.nVHz(polynomial(freqRange), 10000)) #Uses the polynomial to convert the numpy array to an array of theoretical noise values for the noise source at each frequency (converted to nV^2/Hz)
+		#print(noiseTheory)
+		#print(len(resList),len(noiseList),len(noiseTheory), len(resTheory))
+		gain = getGain.calcGain(resTheory, noiseTheory, resList, noiseList)
+		#print(gain)
+		#plt.plot(freqRange, gain)
+		#plt.show()
 		#scioFiles = [] #This contains all the scio files over which the data should be calibrated as tuples, with the path as the first index, row as second
 		
 		#Finds folder closest in time to when the data to be calibrated starts
@@ -226,12 +259,20 @@ def Calibrate(resOn, resOff, noiseOn, noiseOff, noneOn, noneOff, folder): #noneO
 			calTime += noneOffTimes[:noneOffRow+1]
 
 		#The actual calibration of the data we now hold# 
+		#print(len(calData))
+
+		#WARNING INCOMPLETE. LENGTH OF CALIBRATION DATA FOR SOME REASON IS QUITE INCONSISTENT
+		for i in range(len(calData)):
+			for j in range(len(calData[i])):
+				calData[i][j] = getGain.nVHz(getGain.dBm(calData[i][j]), bandwidth) #Converts it to nano volts ^2 per hz
+				try:
+					calData[i][j] = int(calData[i][j]/gain[j])
+				except:
+					calData[i][j] = 0
+			#print(type(calData[i][j]))
+		return calData
 		#Need to use the gain and create 2 text files (for time and data) for every calibration (put them all together in the end) and name them (for now) in order of the huge encompassing for loop
 		#for i in range(len(calData)):
-
-
-
-
 		#print("done")
 	else:
 		print("Invalid data_70MHz folder!")
