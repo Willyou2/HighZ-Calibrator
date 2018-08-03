@@ -1,4 +1,4 @@
-#This is a calibration for the values from the pol0.scio files
+#This is a calibration for the values from the pol0.scio files for the High-Z Experiment
 #Every noise.scio and res50.scio is of length 48 and ends with 0, meaning a cycle of res50 and noise ends at the end of each file
 #NOTE: TIME START AND STOP AND POL0.scio have 15 or 14 rows instead of 11
 #Expected db gain (10 log10(ratio)) = 65
